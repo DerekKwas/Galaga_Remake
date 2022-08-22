@@ -128,8 +128,6 @@ def main():
                 if event.key == pygame.K_SPACE and len(spaceship_bullets) < MAX_BULLETS:
                     bullet = pygame.Rect(spaceship.x + SPACESHIP_WIDTH/2 - 2, spaceship.y - 5, 4, 10)
                     spaceship_bullets.append(bullet)
-                    print(len(spaceship_bullets))
-                    print(bullet)
                     # PLAY bullet fire sound
 
             if event.type == SPACESHIP_HIT:
