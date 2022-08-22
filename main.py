@@ -101,7 +101,6 @@ def handle_enemy_count(MAX_ENEMIES, current_enemies):
     if (len(current_enemies)) < MAX_ENEMIES:
         enemy = Enemy(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, SPACESHIP_HEIGHT)
         current_enemies.append(enemy)
-        print(current_enemies)
 
 def main():
     # Create Rect for spaceship & enemy
