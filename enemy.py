@@ -1,16 +1,5 @@
-import pygame
+from lib2to3.pytree import Base
+from base_ship import Base_Ship
 
-class Enemy:
-    def __init__(self, x, y):
-        WIDTH, HEIGHT = 50, 50
-
-        self.health = 2
-        self.x = x
-        self.y = y
-        self.hitbox = pygame.Rect(x, y, WIDTH, HEIGHT)
-
-    def update_location(self, x, y):
-        self.x = x
-        self.y = y
-        self.hitbox.x = x
-        self.hitbox.y = y
+class Enemy(Base_Ship):
+    health = 2

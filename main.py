@@ -1,5 +1,7 @@
 import pygame
+from base_ship import Base_Ship
 from enemy import Enemy
+from player import Player
 import os
 import random
 pygame.font.init()
@@ -39,33 +41,29 @@ AI_ENEMY = pygame.transform.rotate(AI_ENEMY_IMAGE, 180)
 
 # load background image
 
-def draw_window(spaceship, current_enemies, spaceship_bullets, enemy_bullets, spaceship_health, enemy_health):
-    # WIN.blit(AI_ENEMY, (ai_enemy.x, ai_enemy.y))
+def draw_window(player, current_enemies, spaceship_bullets):
     for enemy in current_enemies:
         WIN.blit(AI_ENEMY, (enemy.x, enemy.y))
-    WIN.blit(SPACESHIP, (spaceship.x, spaceship.y))
+    WIN.blit(SPACESHIP, (player.x, player.y))
 
-    spaceship_health_text = HEALTH_FONT.render(f"Health: {str(spaceship_health)}", 1, WHITE)
-    # enemy_health_text = HEALTH_FONT.render(f"Health: {enemy_health}", 1, RED)
+    spaceship_health_text = HEALTH_FONT.render(f"Health: {str(player.health)}", 1, WHITE)
     WIN.blit(spaceship_health_text, (10, (WIN_HEIGHT - spaceship_health_text.get_height() - 10)))
-    # WIN.blit(enemy_health_text, ((WIN_WIDTH - enemy_health_text.get_width() - 10), 10))
 
     for bullet in spaceship_bullets:
         pygame.draw.rect(WIN, GREEN, bullet)
-    # for bullet in enemy_bullets:
-        # pygame.draw.rect(WIN, RED, bullet)
 
     pygame.display.update()
 
-def handle_movement(keys_pressed, spaceship):
-    if keys_pressed[pygame.K_a] and spaceship.x > 0: # Left
-        spaceship.x -= VEL
-    if keys_pressed[pygame.K_d] and spaceship.x < (WIN_WIDTH - SPACESHIP_WIDTH): # Right
-        spaceship.x += VEL
-    if keys_pressed[pygame.K_w] and spaceship.y > 0: # Up
-        spaceship.y -= VEL
-    if keys_pressed[pygame.K_s] and spaceship.y < (WIN_HEIGHT - SPACESHIP_HEIGHT): # Down
-        spaceship.y += VEL
+def handle_movement(keys_pressed, player):
+    if keys_pressed[pygame.K_a] and player.x > 0: # Left
+        player.update_location(player.x - VEL, player.y)
+    if keys_pressed[pygame.K_d] and player.x < (WIN_WIDTH - SPACESHIP_WIDTH): # Right
+        player.update_location(player.x + VEL, player.y)
+    if keys_pressed[pygame.K_w] and player.y > 0: # Up
+        player.update_location(player.x, player.y - VEL)
+    if keys_pressed[pygame.K_s] and player.y < (WIN_HEIGHT - SPACESHIP_HEIGHT): # Downs
+        player.update_location(player.x, player.y + VEL)
+
 
 def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies):
     for bullet in spaceship_bullets:
@@ -90,13 +88,18 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
 
 def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
-        ENEMY_VEL = DEFAULT_ENEMY_VEL * random.choice((-5, -1, 1, 5))
+        ENEMY_VEL = DEFAULT_ENEMY_VEL * random.choice((-1, 1))
         if enemy.y > WIN_HEIGHT:
             enemy.update_location(enemy.x, 0)
         else:
             enemy.update_location(enemy.x, enemy.y + DEFAULT_ENEMY_VEL)
         enemy.update_location(enemy.x + ENEMY_VEL, enemy.y)
 
+def has_hit_enemy(current_enemies, player):
+    for enemy in current_enemies:
+        if enemy.hitbox.colliderect(player.hitbox):
+            player.health -= 1
+            
 def handle_enemy_count(MAX_ENEMIES, current_enemies):
     if (len(current_enemies)) < MAX_ENEMIES:
         enemy = Enemy(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, SPACESHIP_HEIGHT)
@@ -104,16 +107,12 @@ def handle_enemy_count(MAX_ENEMIES, current_enemies):
 
 def main():
     # Create Rect for spaceship & enemy
-    spaceship = pygame.Rect((300 - SPACESHIP_WIDTH/2), (300 + SPACESHIP_HEIGHT/2), SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
-
+    player = Player(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - SPACESHIP_HEIGHT)
     current_enemies = []
 
     # Bullet list
     spaceship_bullets = []
     enemy_bullets = []
-    # Player healths
-    spaceship_health = 10
-    enemy_health = 10
 
     clock = pygame.time.Clock()
     run = True
@@ -126,24 +125,29 @@ def main():
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and len(spaceship_bullets) < MAX_BULLETS:
-                    bullet = pygame.Rect(spaceship.x + SPACESHIP_WIDTH/2 - 2, spaceship.y - 5, 4, 10)
+                    bullet = pygame.Rect(player.x + SPACESHIP_WIDTH/2 - 2, player.y - 5, 4, 10)
                     spaceship_bullets.append(bullet)
                     # PLAY bullet fire sound
 
             if event.type == SPACESHIP_HIT:
-                spaceship_health -= 1
+                player.health -= 1
                 # PLAY bullet hit sound
 
         WIN.fill(GRAY)
 
         keys_pressed = pygame.key.get_pressed()
 
-        handle_movement(keys_pressed, spaceship)
+        if player.health <= 0:
+            pygame.time.delay(5000)
+            break
+
+        handle_movement(keys_pressed, player)
         handle_enemy_count(MAX_ENEMIES, current_enemies)
         handle_enemy_movement(current_enemies)
-        handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
-
-        draw_window(spaceship, current_enemies, spaceship_bullets, enemy_bullets, spaceship_health, enemy_health)
+        handle_bullets(spaceship_bullets, enemy_bullets, player, current_enemies)
+        
+        draw_window(player, current_enemies, spaceship_bullets)
+        has_hit_enemy(current_enemies, player)
 
     main()
 
