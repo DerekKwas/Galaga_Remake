@@ -23,7 +23,7 @@ HEALTH_FONT = pygame.font.SysFont("comicsans", 40)
 # Variable constants
 FPS = 60
 VEL = 5
-MAX_ENEMIES = 5
+MAX_ENEMIES = 1
 DEFAULT_ENEMY_VEL = 3
 BULLET_VEL = 7
 MAX_BULLETS = 10
@@ -88,26 +88,22 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
 
 def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
-        ENEMY_VEL = DEFAULT_ENEMY_VEL * random.choice((-1, 1))
-        if enemy.y > WIN_HEIGHT:
-            enemy.update_location(enemy.x, 0)
-        else:
-            enemy.update_location(enemy.x, enemy.y + DEFAULT_ENEMY_VEL)
-        enemy.update_location(enemy.x + ENEMY_VEL, enemy.y)
+        enemy.get_random_vel(WIN_WIDTH, WIN_HEIGHT)
 
 def has_hit_enemy(current_enemies, player):
     for enemy in current_enemies:
-        if enemy.hitbox.colliderect(player.hitbox):
+        if enemy.hitbox.colliderect(player.hitbox) and enemy.canDamage:
             player.health -= 1
+            enemy.canDamage = False
             
 def handle_enemy_count(MAX_ENEMIES, current_enemies):
     if (len(current_enemies)) < MAX_ENEMIES:
-        enemy = Enemy(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, SPACESHIP_HEIGHT)
+        enemy = Enemy(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, -SPACESHIP_HEIGHT, 5)
         current_enemies.append(enemy)
 
 def main():
     # Create Rect for spaceship & enemy
-    player = Player(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - SPACESHIP_HEIGHT)
+    player = Player(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - SPACESHIP_HEIGHT, 10)
     current_enemies = []
 
     # Bullet list
@@ -146,8 +142,8 @@ def main():
         handle_enemy_movement(current_enemies)
         handle_bullets(spaceship_bullets, enemy_bullets, player, current_enemies)
         
-        draw_window(player, current_enemies, spaceship_bullets)
         has_hit_enemy(current_enemies, player)
+        draw_window(player, current_enemies, spaceship_bullets)
 
     main()
 
