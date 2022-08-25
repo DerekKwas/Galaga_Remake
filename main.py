@@ -43,11 +43,15 @@ AI_ENEMY = pygame.transform.rotate(AI_ENEMY_IMAGE, 180)
 
 def draw_window(player, current_enemies, spaceship_bullets):
     for enemy in current_enemies:
-        WIN.blit(AI_ENEMY, (enemy.x, enemy.y))
+        WIN.blit(AI_ENEMY, (enemy.location.x, enemy.location.y))
     WIN.blit(SPACESHIP, (player.x, player.y))
 
     spaceship_health_text = HEALTH_FONT.render(f"Health: {str(player.health)}", 1, WHITE)
     WIN.blit(spaceship_health_text, (10, (WIN_HEIGHT - spaceship_health_text.get_height() - 10)))
+
+    for enemy in current_enemies:
+            for point in enemy.waypoints:
+                pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
 
     for bullet in spaceship_bullets:
         pygame.draw.rect(WIN, GREEN, bullet)
@@ -74,7 +78,6 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
                 spaceship_bullets.remove(bullet)
                 if enemy.health <= 0:
                     current_enemies.remove(enemy)
-                    print("You ded son!")
         if bullet.y < 0 and (bullet in spaceship_bullets):
             spaceship_bullets.remove(bullet)
 
@@ -88,22 +91,44 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
 
 def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
-        enemy.get_random_vel(WIN_WIDTH, WIN_HEIGHT)
+        enemy.update()
 
 def has_hit_enemy(current_enemies, player):
     for enemy in current_enemies:
         if enemy.hitbox.colliderect(player.hitbox) and enemy.canDamage:
             player.health -= 1
             enemy.canDamage = False
-            
+
 def handle_enemy_count(MAX_ENEMIES, current_enemies):
     if (len(current_enemies)) < MAX_ENEMIES:
-        enemy = Enemy(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, -SPACESHIP_HEIGHT, 5)
+        enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), SPACESHIP_HEIGHT, 5)
         current_enemies.append(enemy)
+        pygame.display.update()
+
+# TEST
+def get_random_path():
+    DEFAULT_POINT = (WIN_WIDTH/2, 10)
+    points = []
+    pointsMax = 3
+    while (len(points) <= pointsMax):
+        pointsLen = len(points)
+        if pointsLen == pointsMax:
+            break
+        elif len(points) == 0:
+            points.append(DEFAULT_POINT)
+        else:
+            lastPoint = points[len(points) - 1]
+            x = random.randint(0, WIN_WIDTH)
+            y = random.randint(lastPoint[1] + 25, WIN_HEIGHT/(pointsMax - 1) * len(points))
+            points.append((x,y))
+        for point in points:
+            pygame.draw.circle(WIN, (255, 125, 0), (point[0], point[1]), 7, 0)
+
+
 
 def main():
     # Create Rect for spaceship & enemy
-    player = Player(WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - SPACESHIP_HEIGHT, 10)
+    player = Player(WIN, WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - SPACESHIP_HEIGHT, 10)
     current_enemies = []
 
     # Bullet list
@@ -114,6 +139,7 @@ def main():
     run = True
     while run:
         clock.tick(FPS)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -139,9 +165,9 @@ def main():
 
         handle_movement(keys_pressed, player)
         handle_enemy_count(MAX_ENEMIES, current_enemies)
-        handle_enemy_movement(current_enemies)
         handle_bullets(spaceship_bullets, enemy_bullets, player, current_enemies)
-        
+
+        handle_enemy_movement(current_enemies)
         has_hit_enemy(current_enemies, player)
         draw_window(player, current_enemies, spaceship_bullets)
 
