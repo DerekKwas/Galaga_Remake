@@ -8,7 +8,7 @@ class Base_Ship:
         self.x = x
         self.y = y
         self.health = health
-        self.hitbox = pygame.Rect(x, y, self.WIDTH, self.HEIGHT)
+        self.hitbox = pygame.Rect(self.x, self.y, self.WIDTH, self.HEIGHT)
 
     def update_location(self, x, y):
         self.x = x
