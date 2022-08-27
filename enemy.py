@@ -24,6 +24,8 @@ class Enemy(Base_Ship):
         self.generate_waypoints()
         self.targetIndex = 0
         self.target = self.waypoints[self.targetIndex]
+
+        self.canDamage = True
         
     def seek(self):
         # Steering force = desired velocity - current velocity
@@ -59,8 +61,9 @@ class Enemy(Base_Ship):
         if self.location.y > WIN_HEIGHT:
             self.location.y = 0
             self.targetIndex = 0
+            self.canDamage = True
         if self.location.y < 0:
-            self.location.y = WIN_HEIGHT
+            self.location.y = WIN_HEIGHT 
 
     def generate_waypoints(self):
         while len(self.waypoints) < MAX_WAYPOINTS: # 2 will be max generated waypoints for now
@@ -72,3 +75,7 @@ class Enemy(Base_Ship):
                 self.waypoints.append(point)
         point = (WIN_WIDTH/2, 1200)
         self.waypoints.append(point)
+
+    def update_hitbox(self):
+        self.hitbox.x = self.location.x
+        self.hitbox.y = self.location.y
