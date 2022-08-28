@@ -13,8 +13,8 @@ MAX_FORCE = .1
 APPROACH_RADIUS = 200
 
 class Enemy(Base_Ship):
-    def __init__(self, WIN, x, y, health):
-        super().__init__(WIN, x, y, health)
+    def __init__(self, WIN, x, y):
+        super().__init__(WIN, x, y)
 
         self.location = vec(x, y)
         self.velocity = vec(DEFAULT_VEL)
@@ -63,7 +63,9 @@ class Enemy(Base_Ship):
             self.targetIndex = 0
             self.canDamage = True
         if self.location.y < 0:
-            self.location.y = WIN_HEIGHT 
+            self.location.y = WIN_HEIGHT
+        self.x = self.location.x
+        self.y = self.location.y
 
     def generate_waypoints(self):
         while len(self.waypoints) < MAX_WAYPOINTS: # 2 will be max generated waypoints for now
