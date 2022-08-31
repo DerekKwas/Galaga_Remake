@@ -1,8 +1,9 @@
 from base_ship import Base_Ship
-import pygame as pg
+import os
+import pygame
 import random
 import math
-vec = pg.math.Vector2
+vec = pygame.math.Vector2
 
 WIN_WIDTH = 600
 WIN_HEIGHT = 600
@@ -11,6 +12,14 @@ DEFAULT_VEL = 0,0
 MAX_SPEED = 5
 MAX_FORCE = .1
 APPROACH_RADIUS = 200
+
+# Enemy images
+ENEMY_LOW_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_Low.png"))
+ENEMY_LOW = pygame.transform.rotate(ENEMY_LOW_IMAGE, 180)
+ENEMY_MED_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_Med.png"))
+ENEMY_MED = pygame.transform.rotate(ENEMY_MED_IMAGE, 180)
+ENEMY_HIGH_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_High.png"))
+ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 
 class Enemy(Base_Ship):
     def __init__(self, WIN, x, y):
@@ -25,6 +34,7 @@ class Enemy(Base_Ship):
         self.targetIndex = 0
         self.target = self.waypoints[self.targetIndex]
 
+        self.health = 3
         self.canDamage = True
         
     def seek(self):
@@ -81,3 +91,12 @@ class Enemy(Base_Ship):
     def update_hitbox(self):
         self.hitbox.x = self.location.x
         self.hitbox.y = self.location.y
+
+    def update_image(self):
+        if self.health == 3:
+            image = ENEMY_HIGH
+        elif self.health == 2:
+            image = ENEMY_MED
+        else:
+            image = ENEMY_LOW
+        return image
