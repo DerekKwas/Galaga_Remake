@@ -59,7 +59,7 @@ ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 # Change it so that the player dies if hit by enemy bullet once, or crashed into
 def draw_window(player, current_enemies, spaceship_bullets):
     for enemy in current_enemies:
-        WIN.blit(ENEMY_HIGH, (enemy.location.x, enemy.location.y))
+        WIN.blit(enemy.update_image(), (enemy.location.x, enemy.location.y))
     WIN.blit(SPACESHIP, (player.x, player.y))
 
     # spaceship_health_text = HEALTH_FONT.render(f"Health: {str(player.target_health)}", 1, WHITE)
@@ -81,9 +81,8 @@ def handle_movement(keys_pressed, player):
         player.update_location(player.x + VEL, player.y)
     if keys_pressed[pygame.K_w] and player.y > 0: # Up
         player.update_location(player.x, player.y - VEL)
-    if keys_pressed[pygame.K_s] and player.y < (WIN_HEIGHT - (player.health_bar_offset + 11)): # Downs
+    if keys_pressed[pygame.K_s] and player.y < WIN_HEIGHT - SPACESHIP_HEIGHT: # Downs
         player.update_location(player.x, player.y + VEL)
-    player.advanced_health()
 
 
 def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies):
@@ -91,9 +90,9 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
         bullet.y -= BULLET_VEL
         for enemy in current_enemies:
             if enemy.hitbox.colliderect(bullet) and (bullet in spaceship_bullets):
-                enemy.target_health -= 10
+                enemy.health -= 1
                 spaceship_bullets.remove(bullet)
-                if enemy.target_health <= 0:
+                if enemy.health <= 0:
                     current_enemies.remove(enemy)
         if bullet.y < 0 and (bullet in spaceship_bullets):
             spaceship_bullets.remove(bullet)
@@ -110,12 +109,11 @@ def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
         enemy.update()
         enemy.update_hitbox()
-        enemy.advanced_health()
 
 def has_hit_enemy(current_enemies, player):
     for enemy in current_enemies:
         if enemy.hitbox.colliderect(player.hitbox) and enemy.canDamage:
-            player.target_health -= 10
+            player.health -= 1
             enemy.canDamage = False
 
 def handle_enemy_count(MAX_ENEMIES, current_enemies):
@@ -171,16 +169,13 @@ def main():
                     # PLAY bullet fire sound
 
             if event.type == SPACESHIP_HIT:
-                player.target_health -= 10
+                player.health -= 1
                 # PLAY bullet hit sound
 
         WIN.fill(GRAY)
 
         keys_pressed = pygame.key.get_pressed()
 
-        if player.target_health <= 0:
-            pygame.time.delay(5000)
-            break
 
         handle_movement(keys_pressed, player)
         handle_enemy_count(MAX_ENEMIES, current_enemies)
@@ -190,8 +185,9 @@ def main():
         has_hit_enemy(current_enemies, player)
         draw_window(player, current_enemies, spaceship_bullets)
 
-        #if player.target_health < player.max_health:
-            #player.target_health += .5
+        if player.health <= 0:
+            pygame.time.delay(5000)
+            break
 
     main()
 
