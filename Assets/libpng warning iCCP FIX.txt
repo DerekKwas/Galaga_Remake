@@ -1,0 +1,2 @@
+Photoshop:
+ - When exporting, ensure "Convert to sRGB" & "Embed Color Profile" is unchecked
