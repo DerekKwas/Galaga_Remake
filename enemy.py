@@ -9,7 +9,7 @@ WIN_WIDTH = 600
 WIN_HEIGHT = 600
 MAX_WAYPOINTS = 2
 DEFAULT_VEL = 0,0
-MAX_SPEED = 5
+MAX_SPEED = 4
 MAX_FORCE = .1
 APPROACH_RADIUS = 200
 
@@ -36,6 +36,7 @@ class Enemy(Base_Ship):
 
         self.health = 3
         self.canDamage = True
+        self.bullets = []
         
     def seek(self):
         # Steering force = desired velocity - current velocity
