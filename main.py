@@ -30,15 +30,20 @@ HEALTH_FONT = pygame.font.SysFont("comicsans", 40)
 # Variable constants
 FPS = 60
 VEL = 5
-MAX_ENEMIES = 1
+MAX_ENEMIES = 3
 DEFAULT_ENEMY_VEL = 3
 BULLET_VEL = 7
 MAX_BULLETS = 10
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 50, 50
+ENEMY_FIRERATE = 500
+ENEMY_SPAWNRATE = 2000
+
 
 # Custom Events
 SPACESHIP_HIT = pygame.USEREVENT + 1
 ENEMY_HIT = pygame.USEREVENT + 2
+ENEMY_FIRE = pygame.USEREVENT + 3
+ENEMY_SPAWN = pygame.USEREVENT + 4
 
 # load ship images
 SPACESHIP = pygame.image.load(os.path.join("Assets", "Spaceship.png"))
@@ -49,28 +54,24 @@ ENEMY_MED = pygame.transform.rotate(ENEMY_MED_IMAGE, 180)
 ENEMY_HIGH_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_High.png"))
 ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 
-
 # load background image
 
-
-# Load in the new images above
-# blit image depending on the enemy's health variable (ie. low, med, or high)
-# remove function for the health bar and put it into a new file to save for future reference
-# Change it so that the player dies if hit by enemy bullet once, or crashed into
 def draw_window(player, current_enemies, spaceship_bullets):
     for enemy in current_enemies:
         WIN.blit(enemy.update_image(), (enemy.location.x, enemy.location.y))
     WIN.blit(SPACESHIP, (player.x, player.y))
 
-    # spaceship_health_text = HEALTH_FONT.render(f"Health: {str(player.target_health)}", 1, WHITE)
-    # WIN.blit(spaceship_health_text, (10, (WIN_HEIGHT - spaceship_health_text.get_height() - 10)))
-
-    for enemy in current_enemies:
-            for point in enemy.waypoints:
-                pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
+    # SHOW THE ENEMY'S DESIRED WAYPOINTS
+    # for enemy in current_enemies:
+            # for point in enemy.waypoints:
+                # pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
 
     for bullet in spaceship_bullets:
         pygame.draw.rect(WIN, GREEN, bullet)
+
+    for enemy in current_enemies:
+        for bullet in enemy.bullets:
+            pygame.draw.rect(WIN, RED, bullet)
 
     pygame.display.update()
 
@@ -84,8 +85,7 @@ def handle_movement(keys_pressed, player):
     if keys_pressed[pygame.K_s] and player.y < WIN_HEIGHT - SPACESHIP_HEIGHT: # Downs
         player.update_location(player.x, player.y + VEL)
 
-
-def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies):
+def handle_bullets(spaceship_bullets, spaceship, current_enemies):
     for bullet in spaceship_bullets:
         bullet.y -= BULLET_VEL
         for enemy in current_enemies:
@@ -97,13 +97,14 @@ def handle_bullets(spaceship_bullets, enemy_bullets, spaceship, current_enemies)
         if bullet.y < 0 and (bullet in spaceship_bullets):
             spaceship_bullets.remove(bullet)
 
-    for bullet in enemy_bullets:
-        bullet.y += BULLET_VEL
-        if spaceship.colliderect(bullet):
-            pygame.event.post(pygame.event.Event(SPACESHIP_HIT))
-            enemy_bullets.remove(bullet)
-        elif bullet.y > WIN_HEIGHT:
-            enemy_bullets.remove(bullet)
+    for enemy in current_enemies:
+        for bullet in enemy.bullets:
+            bullet.y += BULLET_VEL
+            if spaceship.hitbox.colliderect(bullet):
+                pygame.event.post(pygame.event.Event(SPACESHIP_HIT))
+                enemy.bullets.remove(bullet)
+            elif bullet.y > WIN_HEIGHT:
+                enemy.bullets.remove(bullet)
 
 def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
@@ -141,8 +142,6 @@ def get_random_path():
         for point in points:
             pygame.draw.circle(WIN, (255, 125, 0), (point[0], point[1]), 7, 0)
 
-
-
 def main():
     # Create Rect for spaceship & enemy
     player = Player(WIN, WIN_WIDTH/2 - SPACESHIP_WIDTH/2, WIN_HEIGHT - (SPACESHIP_HEIGHT + 25))
@@ -150,7 +149,10 @@ def main():
 
     # Bullet list
     spaceship_bullets = []
-    enemy_bullets = []
+
+    # Event timer to call the ENEMY_FIRE event every ENEMY_FIRERATE milliseconds
+    pygame.time.set_timer(ENEMY_FIRE, ENEMY_FIRERATE)
+    pygame.time.set_timer(ENEMY_SPAWN, ENEMY_SPAWNRATE)
 
     clock = pygame.time.Clock()
     run = True
@@ -172,14 +174,26 @@ def main():
                 player.health -= 1
                 # PLAY bullet hit sound
 
+            if event.type == ENEMY_SPAWN:
+                if len(current_enemies) < MAX_ENEMIES:
+                    enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), 0)
+                    current_enemies.append(enemy)
+
+
+            if event.type == ENEMY_FIRE:
+                if len(current_enemies) > 0:
+                    randomIndex = random.randint(0, len(current_enemies) - 1)
+                    selectedEnemy = current_enemies[randomIndex]
+                    bullet = pygame.Rect(selectedEnemy.x + SPACESHIP_WIDTH/2 - 2, selectedEnemy.y + SPACESHIP_HEIGHT, 4, 10)
+                    selectedEnemy.bullets.append(bullet)
+
         WIN.fill(GRAY)
 
         keys_pressed = pygame.key.get_pressed()
 
-
         handle_movement(keys_pressed, player)
-        handle_enemy_count(MAX_ENEMIES, current_enemies)
-        handle_bullets(spaceship_bullets, enemy_bullets, player, current_enemies)
+        # handle_enemy_count(MAX_ENEMIES, current_enemies)
+        handle_bullets(spaceship_bullets, player, current_enemies)
 
         handle_enemy_movement(current_enemies)
         has_hit_enemy(current_enemies, player)
