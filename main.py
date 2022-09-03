@@ -6,6 +6,7 @@
 #
 # End Notes -------------------------------
 
+import math
 import pygame
 from enemy import Enemy
 from player import Player
@@ -25,7 +26,7 @@ GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 
-HEALTH_FONT = pygame.font.SysFont("comicsans", 40)
+DEF_FONT = pygame.font.SysFont("comicsans", 35)
 
 # Variable constants
 FPS = 60
@@ -62,9 +63,9 @@ def draw_window(player, current_enemies, spaceship_bullets):
     WIN.blit(SPACESHIP, (player.x, player.y))
 
     # SHOW THE ENEMY'S DESIRED WAYPOINTS
-    # for enemy in current_enemies:
-            # for point in enemy.waypoints:
-                # pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
+    #for enemy in current_enemies:
+            #for point in enemy.waypoints:
+                #pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
 
     for bullet in spaceship_bullets:
         pygame.draw.rect(WIN, GREEN, bullet)
@@ -154,10 +155,29 @@ def main():
     pygame.time.set_timer(ENEMY_FIRE, ENEMY_FIRERATE)
     pygame.time.set_timer(ENEMY_SPAWN, ENEMY_SPAWNRATE)
 
+    # Load image
+    background = pygame.image.load(os.path.join("Assets", "main_menu_background.png"))
+    background_height = background.get_height()
+
+    # Define Background Variables
+    scroll = 0
+    tiles = math.ceil(WIN_HEIGHT / background_height) + 1
+
     clock = pygame.time.Clock()
     run = True
     while run:
         clock.tick(FPS)
+        
+        # MENU BACKGROUND (SCROLLING)
+        for i in range(0, tiles):
+            WIN.blit(background, (0, scroll - (i * background_height)))
+
+        # SCROLL BACKGROUND
+        scroll += 2
+
+        # RESET SCROLL
+        if scroll > background_height:
+            scroll = 0
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -187,7 +207,7 @@ def main():
                     bullet = pygame.Rect(selectedEnemy.x + SPACESHIP_WIDTH/2 - 2, selectedEnemy.y + SPACESHIP_HEIGHT, 4, 10)
                     selectedEnemy.bullets.append(bullet)
 
-        WIN.fill(GRAY)
+        # WIN.fill(GRAY)
 
         keys_pressed = pygame.key.get_pressed()
 
@@ -205,5 +225,58 @@ def main():
 
     main()
 
+def main_menu():
+    
+    click = False
+    clock = pygame.time.Clock()
+    run = True
+
+    # Load image
+    background = pygame.image.load(os.path.join("Assets", "main_menu_background.png"))
+    background_height = background.get_height()
+
+    # Define Background Variables
+    scroll = 0
+    tiles = math.ceil(WIN_HEIGHT / background_height) + 1
+
+    while run:
+        clock.tick(FPS)
+
+        Mx, My = pygame.mouse.get_pos()
+
+        # MENU BACKGROUND (SCROLLING)
+        for i in range(0, tiles):
+            WIN.blit(background, (0, scroll - (i * background_height)))
+
+        # SCROLL BACKGROUND
+        scroll += 2
+
+        # RESET SCROLL
+        if scroll > background_height:
+            scroll = 0
+        
+        # PLAY BUTTON
+        button_play = pygame.Rect(WIN_WIDTH/2 - 50, WIN_HEIGHT/2 - 20, 100, 40)
+        play_text = pygame.font.Font.render(DEF_FONT, "Play", True, WHITE)
+        # pygame.draw.rect(WIN, RED, button_play)
+        # WIN.blit(play_text, (button_play.x + (button_play.width - play_text.get_width())/2, button_play.y - (play_text.get_height() - button_play.height)))
+
+        if button_play.collidepoint(Mx, My):
+            if click:
+                main()
+
+        click = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+            mouse_buttons = pygame.mouse.get_pressed()
+            if event.type == pygame.MOUSEBUTTONDOWN and mouse_buttons[0]:
+                click = True
+
+
+        pygame.display.update()
+
 if __name__ == "__main__":
-    main()
+    #main()
+    main_menu()
