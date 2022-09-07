@@ -22,10 +22,10 @@ ENEMY_HIGH_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_High.png"))
 ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 
 class Enemy(Base_Ship):
-    def __init__(self, WIN, x, y):
+    def __init__(self, WIN, x, y, array_pos):
         super().__init__(WIN, x, y)
 
-        self.location = vec(x, y)
+        self.location = vec(array_pos[0], array_pos[1])
         self.velocity = vec(DEFAULT_VEL)
         self.acceleration = vec(0,0)
 
@@ -35,6 +35,9 @@ class Enemy(Base_Ship):
         self.target = self.waypoints[self.targetIndex]
 
         self.health = 3
+        self.array_pos = array_pos
+        self.can_move = False
+        self.return_to_spawnpoint = False
         self.canDamage = True
         self.bullets = []
         
@@ -50,16 +53,16 @@ class Enemy(Base_Ship):
 
     def update(self):
         self.desired_velocity = (self.target - self.location)
-        dist = math.sqrt((math.pow(self.desired_velocity[0], 2)) + (math.pow(self.desired_velocity[1], 2)))                                   # len(self.desired_velocity)
+        dist = math.sqrt((math.pow(self.desired_velocity[0], 2)) + (math.pow(self.desired_velocity[1], 2)))
         self.desired_velocity.normalize() * MAX_SPEED
         if dist < APPROACH_RADIUS:
             self.targetIndex += 1
             self.target = self.waypoints[self.targetIndex]
+            
         else:
             self.target = self.waypoints[self.targetIndex]
 
         self.acc = self.seek()
-
         # Equations of motion
         self.velocity += self.acc
         if len(self.velocity) > MAX_SPEED:
@@ -71,12 +74,22 @@ class Enemy(Base_Ship):
             self.location.x = WIN_WIDTH
         if self.location.y > WIN_HEIGHT:
             self.location.y = 0
-            self.targetIndex = 0
+            self.location.x = self.array_pos.x
             self.canDamage = True
+            self.can_move = False
+            self.return_to_spawnpoint = True
         if self.location.y < 0:
             self.location.y = WIN_HEIGHT
         self.x = self.location.x
         self.y = self.location.y
+
+    def return_to_spawn(self):
+        if self.array_pos.y - self.location.y > MAX_SPEED:
+            self.location.y += MAX_SPEED
+        else:
+            self.location.y = self.array_pos.y
+            self.can_move = False
+            self.return_to_spawnpoint = False
 
     def generate_waypoints(self):
         while len(self.waypoints) < MAX_WAYPOINTS: # 2 will be max generated waypoints for now
