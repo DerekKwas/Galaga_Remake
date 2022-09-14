@@ -15,7 +15,7 @@ import random
 pygame.font.init()
 
 # Setup window
-WIN_WIDTH, WIN_HEIGHT = 600, 600
+WIN_WIDTH, WIN_HEIGHT = 600, 800
 WIN = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 pygame.display.set_caption("Galaga_Remake")
 
@@ -35,7 +35,7 @@ score = 0
 # Variable constants
 FPS = 60
 VEL = 5
-MAX_ENEMIES = 3
+MAX_ENEMIES = 5
 DEFAULT_ENEMY_VEL = 3
 BULLET_VEL = 7
 MAX_BULLETS = 10
@@ -63,10 +63,12 @@ ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 # Load Background images
 background = pygame.image.load(os.path.join("Assets", "main_menu_background.png"))
 background_height = background.get_height()
-scroll_main = 0
 star_big = pygame.image.load(os.path.join("Assets", "Star_Big.png"))
 star_big_height = star_big.get_height()
-scroll_star = 0
+scroll_star_big = 0
+star_small = pygame.image.load(os.path.join("Assets", "Star_Small.png"))
+star_small_height = star_small.get_height()
+scroll_star_small = 0
 
 def draw_window(player, current_enemies, spaceship_bullets, enemy_array):
     # BLIT CURRENT ENEMIES
@@ -104,7 +106,7 @@ def handle_movement(keys_pressed, player):
     if keys_pressed[pygame.K_s] and player.y < WIN_HEIGHT - SPACESHIP_HEIGHT: # Downs
         player.update_location(player.x, player.y + VEL)
 
-def handle_bullets(spaceship_bullets, spaceship, current_enemies):
+def handle_bullets(spaceship_bullets, spaceship, current_enemies, enemy_array):
     for bullet in spaceship_bullets:
         bullet.y -= BULLET_VEL
         for enemy in current_enemies:
@@ -112,6 +114,9 @@ def handle_bullets(spaceship_bullets, spaceship, current_enemies):
                 enemy.health -= 1
                 spaceship_bullets.remove(bullet)
                 if enemy.health <= 0:
+                    enemy_array.append(enemy.array_pos)
+                    print(enemy.array_pos)
+                    print(len(enemy_array))
                     current_enemies.remove(enemy)
                     global score
                     score += 1
@@ -133,8 +138,6 @@ def handle_bullets(spaceship_bullets, spaceship, current_enemies):
 def handle_enemy_movement(current_enemies):
     for enemy in current_enemies:
         if enemy.can_move:
-            print("TRUE")
-            print(enemy.array_pos)
             enemy.update()
             enemy.update_hitbox()
         elif enemy.return_to_spawnpoint:
@@ -154,46 +157,46 @@ def handle_enemy_count(MAX_ENEMIES, current_enemies):
         pygame.display.update()
 
 def handle_background():
-    global scroll_main
-    global scroll_star
+    global scroll_star_big
+    global scroll_star_small
 
-    # Define Background Variables
-    tiles_main = math.ceil(WIN_HEIGHT / background_height) + 1
+    WIN.blit(background, (0, 0))
 
-    # DEFINE STAR_BIG VARIABLES
-    tiles_star = math.ceil(WIN_HEIGHT / star_big_height) + 1
-
-    # MENU BACKGROUND (SCROLLING)
-    for i in range(0, tiles_main):
-        WIN.blit(background, (0, scroll_main - (i * background_height)))
-
-    # SCROLL BACKGROUND
-    scroll_main += 2
-
-    # RESET SCROLL_MAIN
-    if scroll_main > background_height:
-        scroll_main = 0
+    # DEFINE STAR BIG/SMALL VARIABLES
+    tiles_star_big = math.ceil(WIN_HEIGHT / star_big_height) + 1
+    tiles_star_small = math.ceil(WIN_HEIGHT / star_small_height) + 1
 
     # STAR_BIG (SCROLLING)
-    for i in range(0, tiles_star):
-        WIN.blit(star_big, (0, scroll_star - (i * background_height)))
+    for i in range(0, tiles_star_big):
+        WIN.blit(star_big, (0, scroll_star_big - (i * star_big_height)))
 
     # SCROLL STAR_BIG
-    scroll_star += 4
+    scroll_star_big += 4
 
-    # RESET SCROLL_STAR
-    if scroll_star > background_height:
-            scroll_star = 0
+    # RESET SCROLL_STAR_BIG
+    if scroll_star_big > star_big_height:
+        scroll_star_big = 0
+
+    # STAR_SMALL (SCROLLING)
+    for i in range(0, tiles_star_small):
+        WIN.blit(star_small, (0, scroll_star_small - (i * star_small_height)))
+
+    # SCROLL STAR_SMALL
+    scroll_star_small += 2
+
+    # RESET SCROLL_STAR_SMALL
+    if scroll_star_small > star_small_height:
+        scroll_star_small = 0
 
 def create_enemy_array():
     # CREATE ENEMY ARRAY
     array = []
-    size_x = math.floor(WIN_WIDTH / SPACESHIP_WIDTH)
-    size_y = math.floor((WIN_HEIGHT / 2) / SPACESHIP_HEIGHT)
+    size_x = math.floor(WIN_WIDTH / SPACESHIP_WIDTH - 2) # Subtract 2 so that enemies can't spawn against window max
+    size_y = math.floor((WIN_HEIGHT / 2) / SPACESHIP_HEIGHT - 2) # Subtract 2 so that enemies can't spawn against window max
     box_size = 50
     for x in range(0, size_x):
         for y in range(0, size_y):
-            box = pygame.Rect(x * box_size, y * box_size, 50, 50)
+            box = pygame.Rect(x * box_size + box_size, y * box_size + box_size, 50, 50) # Add box_size to offset one square off window max
             pygame.draw.rect(WIN, GRAY, box, 2)
             array.append(box)
     return array
@@ -258,7 +261,10 @@ def main():
                 if len(current_enemies) < MAX_ENEMIES:
                     rand_pos = random.randint(0, len(enemy_array) -1)
                     enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), 0, enemy_array[rand_pos])
+                    enemy.return_to_spawnpoint = True
                     current_enemies.append(enemy)
+                    del enemy_array[rand_pos]
+                    print(len(enemy_array))
 
             if event.type == ENEMY_FIRE:
                 if len(current_enemies) > 0:
@@ -281,7 +287,7 @@ def main():
 
         handle_movement(keys_pressed, player)
         # HANDLE_ENEMY_COUNT(MAX_ENEMIES, CURRENT_ENEMIES)
-        handle_bullets(spaceship_bullets, player, current_enemies)
+        handle_bullets(spaceship_bullets, player, current_enemies, enemy_array)
 
         handle_enemy_movement(current_enemies)
         has_hit_enemy(current_enemies, player)
