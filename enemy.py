@@ -6,7 +6,7 @@ import math
 vec = pygame.math.Vector2
 
 WIN_WIDTH = 600
-WIN_HEIGHT = 600
+WIN_HEIGHT = 800
 MAX_WAYPOINTS = 2
 DEFAULT_VEL = 0,0
 MAX_SPEED = 4
@@ -25,7 +25,7 @@ class Enemy(Base_Ship):
     def __init__(self, WIN, x, y, array_pos):
         super().__init__(WIN, x, y)
 
-        self.location = vec(array_pos[0], array_pos[1])
+        self.location = vec(array_pos[0], 0)
         self.velocity = vec(DEFAULT_VEL)
         self.acceleration = vec(0,0)
 
