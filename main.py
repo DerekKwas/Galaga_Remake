@@ -70,10 +70,10 @@ ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 # Load Background images
 background = pygame.image.load(os.path.join("Assets", "main_menu_background.png"))
 background_height = background.get_height()
-star_big = pygame.image.load(os.path.join("Assets", "Star_Big.png"))
+star_big = pygame.image.load(os.path.join("Assets", "Star_Big_Color.png"))
 star_big_height = star_big.get_height()
 scroll_star_big = 0
-star_small = pygame.image.load(os.path.join("Assets", "Star_Small.png"))
+star_small = pygame.image.load(os.path.join("Assets", "Star_Small_Color.png"))
 star_small_height = star_small.get_height()
 scroll_star_small = 0
 
@@ -89,8 +89,8 @@ def draw_window(player, current_enemies, spaceship_bullets, enemy_array):
                 #pygame.draw.circle(WIN, (255, 0, 0), (point[0], point[1]), 7, 0)
 
     # DRAW ENEMY ARRAY
-    for box in enemy_array:
-        pygame.draw.rect(WIN, GRAY, box, 2)
+    #for box in enemy_array:
+        #pygame.draw.rect(WIN, GRAY, box, 2)
 
     # DRAW PLAYER'S BULLETS
     for bullet in spaceship_bullets:
@@ -336,7 +336,7 @@ def main():
         draw_window(player, current_enemies, spaceship_bullets, enemy_array)
 
         if player.health <= 0:
-            pygame.time.delay(0)
+            pygame.time.delay(2000)
             break
 
     # UPDATE PLAYER'S HIGHSCORE
