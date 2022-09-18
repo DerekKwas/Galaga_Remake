@@ -22,10 +22,11 @@ ENEMY_HIGH_IMAGE = pygame.image.load(os.path.join("Assets", "Enemy_High.png"))
 ENEMY_HIGH = pygame.transform.rotate(ENEMY_HIGH_IMAGE, 180)
 
 class Enemy(Base_Ship):
-    def __init__(self, WIN, x, y, array_pos):
+    def __init__(self, WIN, x, y, array_ref, enemy_array_index):
         super().__init__(WIN, x, y)
 
-        self.location = vec(array_pos[0], 0)
+        self.enemy_array_index = enemy_array_index
+        self.location = vec(array_ref[enemy_array_index].x, 0)
         self.velocity = vec(DEFAULT_VEL)
         self.acceleration = vec(0,0)
 
@@ -35,7 +36,6 @@ class Enemy(Base_Ship):
         self.target = self.waypoints[self.targetIndex]
 
         self.health = 3
-        self.array_pos = array_pos
         self.can_move = False
         self.return_to_spawnpoint = False
         self.canDamage = True
@@ -51,7 +51,7 @@ class Enemy(Base_Ship):
             steer.scale_to_length(MAX_FORCE)
         return steer
 
-    def update(self):
+    def update(self, array_ref):
         self.desired_velocity = (self.target - self.location)
         dist = math.sqrt((math.pow(self.desired_velocity[0], 2)) + (math.pow(self.desired_velocity[1], 2)))
         self.desired_velocity.normalize() * MAX_SPEED
@@ -74,7 +74,7 @@ class Enemy(Base_Ship):
             self.location.x = WIN_WIDTH
         if self.location.y > WIN_HEIGHT:
             self.location.y = 0
-            self.location.x = self.array_pos.x
+            self.location.x = array_ref[self.enemy_array_index].x
             self.canDamage = True
             self.can_move = False
             self.return_to_spawnpoint = True
@@ -83,11 +83,12 @@ class Enemy(Base_Ship):
         self.x = self.location.x
         self.y = self.location.y
 
-    def return_to_spawn(self):
-        if self.array_pos.y - self.location.y > MAX_SPEED:
+    def return_to_spawn(self, array_ref):
+        if array_ref[self.enemy_array_index].y - self.location.y > MAX_SPEED:
             self.location.y += MAX_SPEED
         else:
-            self.location.y = self.array_pos.y
+            self.location.y = array_ref[self.enemy_array_index].y
+            self.location.x = array_ref[self.enemy_array_index].x
             self.can_move = False
             self.return_to_spawnpoint = False
 
