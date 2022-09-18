@@ -31,6 +31,10 @@ ARCADE_FONT = pygame.font.Font(os.path.join("Assets", "Fonts", "ARCADECLASSIC.TT
 
 # GLOBAL VARIABLES
 score = 0
+enemy_array_x = 0
+enemy_array_y = 0
+enemy_array_indices = []
+is_sliding_right = True
 
 # Variable constants
 FPS = 60
@@ -43,6 +47,9 @@ SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 50, 50
 ENEMY_FIRERATE = 500
 ENEMY_SPAWNRATE = 2000
 ENEMY_MADRATE = 5000
+ENEMY_ARRAY_SLIDE_VEL = 1
+ENEMY_ARRAY_SIZE_X = math.floor(WIN_WIDTH / SPACESHIP_WIDTH - 2) # Subtract 2 so that enemies can't spawn against window max
+ENEMY_ARRAY_SIZE_Y = math.floor((WIN_HEIGHT / 2) / SPACESHIP_HEIGHT - 2) # Subtract 2 so that enemies can't spawn against window max
 
 # Custom Events
 SPACESHIP_HIT = pygame.USEREVENT + 1
@@ -106,7 +113,7 @@ def handle_movement(keys_pressed, player):
     if keys_pressed[pygame.K_s] and player.y < WIN_HEIGHT - SPACESHIP_HEIGHT: # Downs
         player.update_location(player.x, player.y + VEL)
 
-def handle_bullets(spaceship_bullets, spaceship, current_enemies, enemy_array):
+def handle_bullets(spaceship_bullets, spaceship, current_enemies):
     for bullet in spaceship_bullets:
         bullet.y -= BULLET_VEL
         for enemy in current_enemies:
@@ -114,9 +121,7 @@ def handle_bullets(spaceship_bullets, spaceship, current_enemies, enemy_array):
                 enemy.health -= 1
                 spaceship_bullets.remove(bullet)
                 if enemy.health <= 0:
-                    enemy_array.append(enemy.array_pos)
-                    print(enemy.array_pos)
-                    print(len(enemy_array))
+                    enemy_array_indices.append(enemy.enemy_array_index)
                     current_enemies.remove(enemy)
                     global score
                     score += 1
@@ -135,13 +140,13 @@ def handle_bullets(spaceship_bullets, spaceship, current_enemies, enemy_array):
         else:
             enemy.bullets = []
 
-def handle_enemy_movement(current_enemies):
+def handle_enemy_movement(current_enemies, enemy_array):
     for enemy in current_enemies:
         if enemy.can_move:
-            enemy.update()
+            enemy.update(enemy_array)
             enemy.update_hitbox()
         elif enemy.return_to_spawnpoint:
-            enemy.return_to_spawn()
+            enemy.return_to_spawn(enemy_array)
             enemy.update_hitbox()
 
 def has_hit_enemy(current_enemies, player):
@@ -149,12 +154,6 @@ def has_hit_enemy(current_enemies, player):
         if enemy.hitbox.colliderect(player.hitbox) and enemy.canDamage:
             player.health -= 1
             enemy.canDamage = False
-
-def handle_enemy_count(MAX_ENEMIES, current_enemies):
-    if (len(current_enemies)) < MAX_ENEMIES:
-        enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), SPACESHIP_HEIGHT)
-        current_enemies.append(enemy)
-        pygame.display.update()
 
 def handle_background():
     global scroll_star_big
@@ -189,17 +188,45 @@ def handle_background():
         scroll_star_small = 0
 
 def create_enemy_array():
+    global enemy_array_indices
     # CREATE ENEMY ARRAY
     array = []
-    size_x = math.floor(WIN_WIDTH / SPACESHIP_WIDTH - 2) # Subtract 2 so that enemies can't spawn against window max
-    size_y = math.floor((WIN_HEIGHT / 2) / SPACESHIP_HEIGHT - 2) # Subtract 2 so that enemies can't spawn against window max
+    global ENEMY_ARRAY_SIZE_X, ENEMY_ARRAY_SIZE_Y
     box_size = 50
-    for x in range(0, size_x):
-        for y in range(0, size_y):
+    for x in range(0, ENEMY_ARRAY_SIZE_X):
+        for y in range(0, ENEMY_ARRAY_SIZE_Y):
             box = pygame.Rect(x * box_size + box_size, y * box_size + box_size, 50, 50) # Add box_size to offset one square off window max
-            pygame.draw.rect(WIN, GRAY, box, 2)
             array.append(box)
+    # ADD A LIST OF INDICES FOR THE ENEMY_ARRAY
+    for index in range(len(array)):
+        enemy_array_indices.append(index)
     return array
+
+def handle_enemy_array_slide(enemy_array, current_enemies):
+    global enemy_array_x, enemy_array_y, is_sliding_right
+    enemy_array_x = enemy_array[0].x
+    enemy_array_y = enemy_array[0].y
+
+
+    if (enemy_array_x + (ENEMY_ARRAY_SIZE_X * SPACESHIP_WIDTH) >= WIN_WIDTH):
+        is_sliding_right = False
+    elif (enemy_array_x <= 0):
+        is_sliding_right = True
+
+    if (is_sliding_right):
+        for spot in enemy_array:
+            spot.x += ENEMY_ARRAY_SLIDE_VEL
+        for enemy in current_enemies:
+            if (not enemy.can_move):
+                enemy.location[0] += ENEMY_ARRAY_SLIDE_VEL
+                enemy.update_hitbox()
+    else:
+        for spot in enemy_array:
+            spot.x -= ENEMY_ARRAY_SLIDE_VEL
+        for enemy in current_enemies:
+            if (not enemy.can_move):
+                enemy.location[0] -= ENEMY_ARRAY_SLIDE_VEL
+                enemy.update_hitbox()
 
 def main():
     # CREATE RECT FOR SPACESHIP & ENEMY
@@ -259,15 +286,18 @@ def main():
 
             if event.type == ENEMY_SPAWN:
                 if len(current_enemies) < MAX_ENEMIES:
-                    rand_pos = random.randint(0, len(enemy_array) -1)
-                    enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), 0, enemy_array[rand_pos])
+                    rand_array_index = random.randint(0, len(enemy_array_indices) - 1)
+                    enemy = Enemy(WIN, random.randrange(0, WIN_WIDTH), 0, enemy_array, enemy_array_indices[rand_array_index])
                     enemy.return_to_spawnpoint = True
                     current_enemies.append(enemy)
-                    del enemy_array[rand_pos]
-                    print(len(enemy_array))
+                    del enemy_array_indices[rand_array_index]
 
             if event.type == ENEMY_FIRE:
-                if len(current_enemies) > 0:
+                if len(current_enemies) == 1:
+                    selectedEnemy = current_enemies[0]
+                    bullet = pygame.Rect(selectedEnemy.location[0] + SPACESHIP_WIDTH/2 - 2, selectedEnemy.location[1] + SPACESHIP_HEIGHT, 4, 10)
+                    selectedEnemy.bullets.append(bullet)
+                if len(current_enemies) > 1:
                     randomIndex = random.randint(0, len(current_enemies) - 1)
                     selectedEnemy = current_enemies[randomIndex]
                     bullet = pygame.Rect(selectedEnemy.location[0] + SPACESHIP_WIDTH/2 - 2, selectedEnemy.location[1] + SPACESHIP_HEIGHT, 4, 10)
@@ -286,10 +316,10 @@ def main():
         keys_pressed = pygame.key.get_pressed()
 
         handle_movement(keys_pressed, player)
-        # HANDLE_ENEMY_COUNT(MAX_ENEMIES, CURRENT_ENEMIES)
-        handle_bullets(spaceship_bullets, player, current_enemies, enemy_array)
+        handle_bullets(spaceship_bullets, player, current_enemies)
+        handle_enemy_array_slide(enemy_array, current_enemies)
 
-        handle_enemy_movement(current_enemies)
+        handle_enemy_movement(current_enemies, enemy_array)
         has_hit_enemy(current_enemies, player)
         
         # SHOW PLAYER SCORE (NEEDED TO CREATE VARIABLE FOR RETURNED RECT OF BLIT TO GET THE X CORD)
@@ -306,7 +336,7 @@ def main():
         draw_window(player, current_enemies, spaceship_bullets, enemy_array)
 
         if player.health <= 0:
-            pygame.time.delay(2500)
+            pygame.time.delay(0)
             break
 
     # UPDATE PLAYER'S HIGHSCORE
@@ -315,7 +345,7 @@ def main():
         file = open("data.txt", "w")
         file.write(f"{highscore}")
         file.close()
-    score = 0    
+    score = 0
 
     # SEND TO MAIN MENU WHEN KILLED
     main_menu()
@@ -356,5 +386,4 @@ def main_menu():
         pygame.display.update()
 
 if __name__ == "__main__":
-    # main()
     main_menu()
